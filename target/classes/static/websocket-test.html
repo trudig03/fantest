@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Test Sayfası</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #connection-form { margin-bottom: 20px; }
+        #message-container { 
+            border: 1px solid #ccc; 
+            padding: 10px; 
+            height: 400px; 
+            overflow-y: auto;
+            background-color: #f9f9f9;
+        }
+        .form-group { margin-bottom: 10px; }
+        label { display: block; margin-bottom: 5px; }
+        input[type="text"], input[type="number"] { width: 300px; padding: 5px; }
+        button { padding: 8px 15px; background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+        pre { white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h1>WebSocket Test Sayfası</h1>
+    
+    <div id="connection-form">
+        <div class="form-group">
+            <label for="server-url">WebSocket URL:</label>
+            <input type="text" id="server-url" value="http://localhost:8080/ws" />
+        </div>
+        <div class="form-group">
+            <label for="match-id">Maç ID:</label>
+            <input type="number" id="match-id" value="1" />
+        </div>
+        <button id="connect-btn">Bağlan</button>
+        <button id="disconnect-btn" disabled>Bağlantıyı Kes</button>
+    </div>
+    
+    <h2>Mesajlar</h2>
+    <div id="message-container"></div>
+    
+    <script>
+        let stompClient = null;
+        
+        function connect() {
+            const serverUrl = document.getElementById('server-url').value;
+            const matchId = document.getElementById('match-id').value;
+            
+            // Bağlantı durumunu güncelle
+            document.getElementById('connect-btn').disabled = true;
+            document.getElementById('disconnect-btn').disabled = false;
+            
+            // SockJS ve STOMP bağlantısı kur
+            const socket = new SockJS(serverUrl);
+            stompClient = Stomp.over(socket);
+            
+            // Debug log'larını kapat
+            stompClient.debug = null;
+            
+            // Bağlantı başarılı olduğunda
+            stompClient.connect({}, function(frame) {
+                addMessage("Bağlantı başarılı: " + frame);
+                
+                // Maç topic'ine abone ol
+                stompClient.subscribe('/topic/match/' + matchId, function(message) {
+                    try {
+                        const messageBody = JSON.parse(message.body);
+                        addMessage("Maç güncellemesi alındı: " + JSON.stringify(messageBody, null, 2));
+                    } catch (e) {
+                        addMessage("Alınan mesaj: " + message.body);
+                    }
+                });
+                
+                addMessage("Maç kanalına abone olundu: /topic/match/" + matchId);
+            }, function(error) {
+                // Bağlantı hatası
+                addMessage("Bağlantı hatası: " + error);
+                disconnect();
+            });
+        }
+        
+        function disconnect() {
+            if (stompClient !== null) {
+                stompClient.disconnect();
+                stompClient = null;
+                addMessage("Bağlantı kesildi");
+            }
+            
+            // Bağlantı durumunu güncelle
+            document.getElementById('connect-btn').disabled = false;
+            document.getElementById('disconnect-btn').disabled = true;
+        }
+        
+        function addMessage(message) {
+            const messageContainer = document.getElementById('message-container');
+            const messageElement = document.createElement('div');
+            
+            // JSON formatında ise güzel göster
+            if (typeof message === 'string' && message.includes('{') && message.includes('}')) {
+                try {
+                    const jsonStart = message.indexOf('{');
+                    const prefix = message.substring(0, jsonStart);
+                    const jsonPart = message.substring(jsonStart);
+                    const jsonObj = JSON.parse(jsonPart);
+                    
+                    messageElement.innerHTML = prefix + '<pre>' + JSON.stringify(jsonObj, null, 2) + '</pre>';
+                } catch (e) {
+                    messageElement.textContent = message;
+                }
+            } else {
+                messageElement.textContent = message;
+            }
+            
+            messageElement.style.borderBottom = '1px solid #eee';
+            messageElement.style.padding = '8px 0';
+            messageContainer.appendChild(messageElement);
+            
+            // Otomatik scroll
+            messageContainer.scrollTop = messageContainer.scrollHeight;
+        }
+        
+        // Event listeners
+        document.getElementById('connect-btn').addEventListener('click', connect);
+        document.getElementById('disconnect-btn').addEventListener('click', disconnect);
+    </script>
+</body>
+</html>

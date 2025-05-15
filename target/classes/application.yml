@@ -1,0 +1,54 @@
+spring:
+  main:
+    allow-circular-references: true
+  mvc:
+    cors:
+      allowed-origin-patterns: '*'
+      allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+      allowed-headers: '*'
+      allow-credentials: true
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc.batch_size: 50
+        order_inserts: true
+        order_updates: true
+        format_sql: false
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    generate-ddl: true
+    open-in-view: false
+  datasource:
+    url: jdbc:postgresql://dpg-d0ivdbadbo4c738tr0u0-a.frankfurt-postgres.render.com:5432/fandb
+    username: fandb_user
+    password: GnRo77JLL7y6zrYtl4UjuWftxucZKDCb
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      idle-timeout: 30000
+      max-lifetime: 1800000
+      connection-timeout: 20000
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+
+# JWT Configuration
+jwt:
+  secret: 5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437
+  expiration: 86400000 # 24 hours in milliseconds
+  refresh-token:
+    expiration: 604800000 # 7 days in milliseconds
+
+# Admin user configuration for initialization
+admin:
+  username: superadmin
+  password: superadmin
+  email: admin@fanla.net
+  firstName: Super
+  lastName: Admin
